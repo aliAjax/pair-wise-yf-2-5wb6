@@ -4,6 +4,7 @@ export type ShadeLevelType = 'none' | 'partial' | 'full';
 export type NoiseLevelType = 'quiet' | 'moderate' | 'noisy';
 export type StayDurationType = 'short' | 'medium' | 'long' | 'verylong';
 export type TimePeriodType = 'morning' | 'noon' | 'afternoon' | 'evening' | 'night';
+export type VisitStatusType = 'pending' | 'visited';
 
 export interface BenchExperience {
   id: string;
@@ -28,6 +29,8 @@ export interface Bench {
   rating: number;
   review: string;
   experiences: BenchExperience[];
+  visitStatus?: VisitStatusType;
+  visitMarkedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,4 +87,9 @@ export const TIME_PERIOD_ICONS: Record<TimePeriodType, string> = {
   afternoon: 'cloud-sun',
   evening: 'sunset',
   night: 'moon',
+};
+
+export const VISIT_STATUS_LABELS: Record<VisitStatusType, string> = {
+  pending: '待探访',
+  visited: '已探访',
 };

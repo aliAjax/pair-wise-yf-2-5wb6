@@ -4,6 +4,8 @@ import { loadBenches, saveBenches } from '@/utils/storage';
 import { generateId } from '@/utils/comfort';
 import { mockBenches } from '@/data/mockBenches';
 
+export type ViewMode = 'all' | 'pending';
+
 interface BenchState {
   benches: Bench[];
   searchQuery: string;
@@ -11,6 +13,7 @@ interface BenchState {
   orientationFilter: OrientationType | null;
   shadeFilter: ShadeLevelType | null;
   noiseFilter: NoiseLevelType | null;
+  viewMode: ViewMode;
   initialized: boolean;
 }
 
@@ -21,11 +24,14 @@ interface BenchActions {
   setOrientationFilter: (orientation: OrientationType | null) => void;
   setShadeFilter: (shade: ShadeLevelType | null) => void;
   setNoiseFilter: (noise: NoiseLevelType | null) => void;
+  setViewMode: (mode: ViewMode) => void;
   clearFilters: () => void;
   addBench: (bench: Omit<Bench, 'id' | 'createdAt' | 'updatedAt' | 'experiences'>) => void;
   updateBench: (id: string, updates: Partial<Bench>) => void;
   deleteBench: (id: string) => void;
   getBenchById: (id: string) => Bench | undefined;
+  togglePendingVisit: (id: string) => void;
+  markVisited: (id: string) => void;
   addExperience: (benchId: string, experience: Omit<BenchExperience, 'id' | 'benchId'>) => void;
   updateExperience: (benchId: string, expId: string, updates: Partial<BenchExperience>) => void;
   deleteExperience: (benchId: string, expId: string) => void;
@@ -39,6 +45,7 @@ const initialState: BenchState = {
   orientationFilter: null,
   shadeFilter: null,
   noiseFilter: null,
+  viewMode: 'all',
   initialized: false,
 };
 
@@ -60,6 +67,7 @@ export const useBenchStore = create<BenchState & BenchActions>((set, get) => ({
   setOrientationFilter: (orientation) => set({ orientationFilter: orientation }),
   setShadeFilter: (shade) => set({ shadeFilter: shade }),
   setNoiseFilter: (noise) => set({ noiseFilter: noise }),
+  setViewMode: (mode) => set({ viewMode: mode }),
 
   clearFilters: () => set({
     searchQuery: '',
@@ -101,6 +109,28 @@ export const useBenchStore = create<BenchState & BenchActions>((set, get) => ({
 
   getBenchById: (id) => {
     return get().benches.find((bench) => bench.id === id);
+  },
+
+  togglePendingVisit: (id) => {
+    const newBenches = get().benches.map((bench) => {
+      if (bench.id !== id) return bench;
+      if (bench.visitStatus === 'pending') {
+        return { ...bench, visitStatus: undefined, visitMarkedAt: undefined };
+      }
+      return { ...bench, visitStatus: 'pending' as const, visitMarkedAt: new Date().toISOString() };
+    });
+    set({ benches: newBenches });
+    saveBenches(newBenches);
+  },
+
+  markVisited: (id) => {
+    const newBenches = get().benches.map((bench) =>
+      bench.id === id
+        ? { ...bench, visitStatus: 'visited' as const, visitMarkedAt: undefined }
+        : bench
+    );
+    set({ benches: newBenches });
+    saveBenches(newBenches);
   },
 
   addExperience: (benchId, experienceData) => {
@@ -153,9 +183,11 @@ export const useBenchStore = create<BenchState & BenchActions>((set, get) => ({
   },
 
   getFilteredBenches: () => {
-    const { benches, searchQuery, materialFilter, orientationFilter, shadeFilter, noiseFilter } = get();
-    
-    return benches.filter((bench) => {
+    const { benches, searchQuery, materialFilter, orientationFilter, shadeFilter, noiseFilter, viewMode } = get();
+
+    const filtered = benches.filter((bench) => {
+      if (viewMode === 'pending' && bench.visitStatus !== 'pending') return false;
+
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchName = bench.name.toLowerCase().includes(query);
@@ -163,13 +195,23 @@ export const useBenchStore = create<BenchState & BenchActions>((set, get) => ({
         const matchReview = bench.review.toLowerCase().includes(query);
         if (!matchName && !matchLocation && !matchReview) return false;
       }
-      
+
       if (materialFilter && bench.material !== materialFilter) return false;
       if (orientationFilter && bench.orientation !== orientationFilter) return false;
       if (shadeFilter && bench.shadeLevel !== shadeFilter) return false;
       if (noiseFilter && bench.noiseLevel !== noiseFilter) return false;
-      
+
       return true;
     });
+
+    if (viewMode === 'pending') {
+      return [...filtered].sort((a, b) => {
+        const timeA = a.visitMarkedAt ? new Date(a.visitMarkedAt).getTime() : 0;
+        const timeB = b.visitMarkedAt ? new Date(b.visitMarkedAt).getTime() : 0;
+        return timeB - timeA;
+      });
+    }
+
+    return filtered;
   },
 }));

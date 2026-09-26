@@ -14,6 +14,9 @@ import {
   Sunset,
   Moon,
   CloudSun,
+  Bookmark,
+  BookmarkCheck,
+  Check,
 } from 'lucide-react';
 import { useBenchStore } from '@/store/useBenchStore';
 import {
@@ -31,7 +34,7 @@ import { calculateComfortScore, getComfortLevel, getComfortColor } from '@/utils
 export default function BenchDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getBenchById, deleteBench, initialize, initialized } = useBenchStore();
+  const { getBenchById, deleteBench, initialize, initialized, togglePendingVisit, markVisited } = useBenchStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -61,6 +64,9 @@ export default function BenchDetail() {
   const comfortScore = calculateComfortScore(bench);
   const comfortLevel = getComfortLevel(comfortScore);
   const comfortColor = getComfortColor(comfortScore);
+
+  const isPending = bench.visitStatus === 'pending';
+  const isVisited = bench.visitStatus === 'visited';
 
   const timePeriodIcons: Record<TimePeriodType, typeof Sunrise> = {
     morning: Sunrise,
@@ -106,9 +112,23 @@ export default function BenchDetail() {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="font-serif text-2xl font-bold text-deep-brown mb-2">
-                    {bench.name}
-                  </h1>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <h1 className="font-serif text-2xl font-bold text-deep-brown">
+                      {bench.name}
+                    </h1>
+                    {isPending && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-ochre/10 text-ochre text-xs rounded-full">
+                        <Bookmark className="w-3 h-3 fill-current" />
+                        待探访
+                      </span>
+                    )}
+                    {isVisited && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-moss-green/10 text-moss-green text-xs rounded-full">
+                        <BookmarkCheck className="w-3 h-3" />
+                        已探访
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1 text-ink-light">
                     <MapPin className="w-4 h-4 flex-shrink-0" />
                     <span>{bench.location}</span>
@@ -194,6 +214,30 @@ export default function BenchDetail() {
 
                 <div className="flex-1" />
 
+                {isPending && (
+                  <button
+                    onClick={() => id && markVisited(id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-moss-green hover:bg-moss-green/10 rounded-lg transition-colors"
+                  >
+                    <Check className="w-4 h-4" />
+                    标为已探访
+                  </button>
+                )}
+                <button
+                  onClick={() => id && togglePendingVisit(id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    isPending
+                      ? 'bg-ochre text-white hover:bg-ochre-light'
+                      : 'text-ochre hover:bg-ochre/10'
+                  }`}
+                >
+                  {isVisited ? (
+                    <BookmarkCheck className="w-4 h-4" />
+                  ) : (
+                    <Bookmark className={`w-4 h-4 ${isPending ? 'fill-current' : ''}`} />
+                  )}
+                  {isPending ? '取消待探访' : '标为待探访'}
+                </button>
                 <button
                   onClick={() => navigate(`/edit/${bench.id}`)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-moss-green hover:bg-moss-green/10 rounded-lg transition-colors"
