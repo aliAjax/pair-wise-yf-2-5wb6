@@ -10,6 +10,8 @@ import {
   Compass,
   Edit3,
   Trash2,
+  Bookmark,
+  CheckCircle2,
   Sunrise,
   Sunset,
   Moon,
@@ -31,7 +33,7 @@ import { calculateComfortScore, getComfortLevel, getComfortColor } from '@/utils
 export default function BenchDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getBenchById, deleteBench, initialize, initialized } = useBenchStore();
+  const { getBenchById, deleteBench, toggleWantVisit, toggleVisited, initialize, initialized } = useBenchStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -61,6 +63,8 @@ export default function BenchDetail() {
   const comfortScore = calculateComfortScore(bench);
   const comfortLevel = getComfortLevel(comfortScore);
   const comfortColor = getComfortColor(comfortScore);
+  const isWant = bench.visitStatus === 'want';
+  const isVisited = bench.visitStatus === 'visited';
 
   const timePeriodIcons: Record<TimePeriodType, typeof Sunrise> = {
     morning: Sunrise,
@@ -195,6 +199,28 @@ export default function BenchDetail() {
                 <div className="flex-1" />
 
                 <button
+                  onClick={() => toggleWantVisit(bench.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    isWant
+                      ? 'text-white bg-ochre hover:bg-ochre-light'
+                      : 'text-ochre hover:bg-ochre/10'
+                  }`}
+                >
+                  <Bookmark className={`w-4 h-4 ${isWant ? 'fill-current' : ''}`} />
+                  {isWant ? '取消待探访' : '待探访'}
+                </button>
+                <button
+                  onClick={() => toggleVisited(bench.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    isVisited
+                      ? 'text-white bg-moss-green hover:bg-moss-light'
+                      : 'text-moss-green hover:bg-moss-green/10'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {isVisited ? '取消已探访' : '已探访'}
+                </button>
+                <button
                   onClick={() => navigate(`/edit/${bench.id}`)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-moss-green hover:bg-moss-green/10 rounded-lg transition-colors"
                 >
@@ -280,6 +306,14 @@ export default function BenchDetail() {
                 <span className="text-ink-light">时段记录</span>
                 <span className="text-deep-brown">{bench.experiences.length} 条</span>
               </div>
+              {isWant && bench.wantMarkedAt && (
+                <div className="flex justify-between">
+                  <span className="text-ink-light">标记待探访</span>
+                  <span className="text-deep-brown">
+                    {new Date(bench.wantMarkedAt).toLocaleDateString('zh-CN')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

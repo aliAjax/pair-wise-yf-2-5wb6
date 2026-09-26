@@ -11,6 +11,7 @@ interface BenchState {
   orientationFilter: OrientationType | null;
   shadeFilter: ShadeLevelType | null;
   noiseFilter: NoiseLevelType | null;
+  listTab: 'all' | 'want';
   initialized: boolean;
 }
 
@@ -21,10 +22,13 @@ interface BenchActions {
   setOrientationFilter: (orientation: OrientationType | null) => void;
   setShadeFilter: (shade: ShadeLevelType | null) => void;
   setNoiseFilter: (noise: NoiseLevelType | null) => void;
+  setListTab: (tab: 'all' | 'want') => void;
   clearFilters: () => void;
-  addBench: (bench: Omit<Bench, 'id' | 'createdAt' | 'updatedAt' | 'experiences'>) => void;
+  addBench: (bench: Omit<Bench, 'id' | 'createdAt' | 'updatedAt' | 'experiences' | 'visitStatus' | 'wantMarkedAt'>) => void;
   updateBench: (id: string, updates: Partial<Bench>) => void;
   deleteBench: (id: string) => void;
+  toggleWantVisit: (id: string) => void;
+  toggleVisited: (id: string) => void;
   getBenchById: (id: string) => Bench | undefined;
   addExperience: (benchId: string, experience: Omit<BenchExperience, 'id' | 'benchId'>) => void;
   updateExperience: (benchId: string, expId: string, updates: Partial<BenchExperience>) => void;
@@ -39,6 +43,7 @@ const initialState: BenchState = {
   orientationFilter: null,
   shadeFilter: null,
   noiseFilter: null,
+  listTab: 'all',
   initialized: false,
 };
 
@@ -60,6 +65,7 @@ export const useBenchStore = create<BenchState & BenchActions>((set, get) => ({
   setOrientationFilter: (orientation) => set({ orientationFilter: orientation }),
   setShadeFilter: (shade) => set({ shadeFilter: shade }),
   setNoiseFilter: (noise) => set({ noiseFilter: noise }),
+  setListTab: (tab) => set({ listTab: tab }),
 
   clearFilters: () => set({
     searchQuery: '',
@@ -75,6 +81,8 @@ export const useBenchStore = create<BenchState & BenchActions>((set, get) => ({
       ...benchData,
       id: generateId(),
       experiences: [],
+      visitStatus: 'none',
+      wantMarkedAt: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -95,6 +103,35 @@ export const useBenchStore = create<BenchState & BenchActions>((set, get) => ({
 
   deleteBench: (id) => {
     const newBenches = get().benches.filter((bench) => bench.id !== id);
+    set({ benches: newBenches });
+    saveBenches(newBenches);
+  },
+
+  toggleWantVisit: (id) => {
+    const newBenches = get().benches.map((bench): Bench => {
+      if (bench.id !== id) return bench;
+      const marking = bench.visitStatus !== 'want';
+      return {
+        ...bench,
+        visitStatus: marking ? 'want' : 'none',
+        wantMarkedAt: marking ? new Date().toISOString() : null,
+      };
+    });
+    set({ benches: newBenches });
+    saveBenches(newBenches);
+  },
+
+  toggleVisited: (id) => {
+    const newBenches = get().benches.map((bench): Bench => {
+      if (bench.id !== id) return bench;
+      const marking = bench.visitStatus !== 'visited';
+      return {
+        ...bench,
+        visitStatus: marking ? 'visited' : 'none',
+        // 标成已探访后从待探访清单移走
+        wantMarkedAt: null,
+      };
+    });
     set({ benches: newBenches });
     saveBenches(newBenches);
   },

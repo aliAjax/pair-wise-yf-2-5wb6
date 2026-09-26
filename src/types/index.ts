@@ -4,6 +4,7 @@ export type ShadeLevelType = 'none' | 'partial' | 'full';
 export type NoiseLevelType = 'quiet' | 'moderate' | 'noisy';
 export type StayDurationType = 'short' | 'medium' | 'long' | 'verylong';
 export type TimePeriodType = 'morning' | 'noon' | 'afternoon' | 'evening' | 'night';
+export type VisitStatusType = 'none' | 'want' | 'visited';
 
 export interface BenchExperience {
   id: string;
@@ -28,6 +29,8 @@ export interface Bench {
   rating: number;
   review: string;
   experiences: BenchExperience[];
+  visitStatus: VisitStatusType;
+  wantMarkedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -68,6 +71,12 @@ export const STAY_DURATION_LABELS: Record<StayDurationType, string> = {
   medium: '15-30分钟',
   long: '30-60分钟',
   verylong: '1小时以上',
+};
+
+export const VISIT_STATUS_LABELS: Record<VisitStatusType, string> = {
+  none: '未标记',
+  want: '待探访',
+  visited: '已探访',
 };
 
 export const TIME_PERIOD_LABELS: Record<TimePeriodType, string> = {

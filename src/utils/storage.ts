@@ -6,7 +6,15 @@ export function loadBenches(): Bench[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        // 兼容旧存档：补齐后加的探访标记字段
+        return parsed.map((bench) => ({
+          ...bench,
+          visitStatus: bench.visitStatus ?? 'none',
+          wantMarkedAt: bench.wantMarkedAt ?? null,
+        }));
+      }
     }
   } catch (error) {
     console.error('Failed to load benches from localStorage:', error);

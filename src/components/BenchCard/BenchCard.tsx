@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Volume2, Sun, Armchair } from 'lucide-react';
+import { MapPin, Clock, Volume2, Sun, Armchair, Bookmark, CheckCircle2 } from 'lucide-react';
 import type { Bench } from '@/types';
 import { MATERIAL_LABELS, SHADE_LABELS, NOISE_LABELS, STAY_DURATION_LABELS } from '@/types';
 import Rating from '@/components/Rating/Rating';
+import { useBenchStore } from '@/store/useBenchStore';
 import { calculateComfortScore, getComfortLevel, getComfortColor } from '@/utils/comfort';
 
 interface BenchCardProps {
@@ -12,9 +13,12 @@ interface BenchCardProps {
 
 export default function BenchCard({ bench, index = 0 }: BenchCardProps) {
   const navigate = useNavigate();
+  const toggleWantVisit = useBenchStore((state) => state.toggleWantVisit);
   const comfortScore = calculateComfortScore(bench);
   const comfortLevel = getComfortLevel(comfortScore);
   const comfortColor = getComfortColor(comfortScore);
+  const isWant = bench.visitStatus === 'want';
+  const isVisited = bench.visitStatus === 'visited';
 
   const staggerClass = `stagger-${(index % 6) + 1}`;
 
@@ -29,7 +33,7 @@ export default function BenchCard({ bench, index = 0 }: BenchCardProps) {
             <Armchair className="w-10 h-10 text-moss-green/50" />
           </div>
         </div>
-        
+
         <div className="absolute top-3 right-3 px-2 py-1 bg-white/80 backdrop-blur-sm rounded-full text-xs font-medium">
           <span className={comfortColor}>{comfortLevel}</span>
           <span className="text-ink-light ml-1">{comfortScore}</span>
@@ -38,6 +42,28 @@ export default function BenchCard({ bench, index = 0 }: BenchCardProps) {
         <div className="absolute top-3 left-3 px-2 py-1 bg-white/80 backdrop-blur-sm rounded-full text-xs text-ink-light">
           {MATERIAL_LABELS[bench.material]}
         </div>
+
+        {isVisited && (
+          <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2 py-1 bg-moss-green/90 backdrop-blur-sm rounded-full text-xs text-white">
+            <CheckCircle2 className="w-3 h-3" />
+            已探访
+          </div>
+        )}
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleWantVisit(bench.id);
+          }}
+          title={isWant ? '取消待探访' : '标为待探访'}
+          className={`absolute bottom-3 right-3 w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors ${
+            isWant
+              ? 'bg-ochre text-white shadow-sm'
+              : 'bg-white/80 text-ink-light hover:text-ochre'
+          }`}
+        >
+          <Bookmark className={`w-4 h-4 ${isWant ? 'fill-current' : ''}`} />
+        </button>
       </div>
 
       <div className="p-4">
